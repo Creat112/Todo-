@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            background-color: #00b3ff;
+            color: white;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .container {
+            width: 40%;
+            margin: auto;
+            background: #4a7b91a4;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        #task {
+            width: 75%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        #addTask {
+            padding: 10px;
+            background: #4a7b91;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .task {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2c4d5e;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .task span {
+            flex-grow: 1;
+            text-align: left;
+            margin-left: 10px;
+        }
+
+        .task.done span {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .task-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .task-buttons button {
+            background: #d9534f;
+            border: none;
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background: #f0ad4e !important;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .filter-btn {
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+
+        .filter-btn.active {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>To-Do List</h1>
+    <div class="container">
+        <input type="text" id="task" placeholder="Add a new task">
+        <button id="addTask">Add</button>
+        <div id="tasks"></div>
+        <div class="filters">
+            <span id="itemsLeft">0 items left</span>
+            <a href="#" class="filter-btn active" onclick="filterTasks('all')">All</a>
+            <a href="#" class="filter-btn" onclick="filterTasks('active')">Active</a>
+            <a href="#" class="filter-btn" onclick="filterTasks('completed')">Completed</a>
+            <a href="#" class="filter-btn" onclick="clearCompleted()">Clear Completed</a>
+        </div>
+    </div>
+
+    <script>
+   let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+        function renderTasks() {
+            const taskContainer = document.getElementById("tasks");
+            taskContainer.innerHTML = "";
+
+            let filteredTasks = tasks;
+            const activeFilter = document.querySelector(".filter-btn.active").textContent.toLowerCase();
+            if (activeFilter === "active") {
+                filteredTasks = tasks.filter(task => !task.done);
+            } else if (activeFilter === "completed") {
+                filteredTasks = tasks.filter(task => task.done);
+            }
+
+            filteredTasks.forEach((task, i) => {
+    const taskElement = document.createElement("div");
+    taskElement.className = `task ${task.done ? "done" : ""}`;
+    taskElement.setAttribute("data-index", tasks.indexOf(task)); // حفظ الـ index الحقيقي
+
+    taskElement.innerHTML = `
+        <input type="checkbox" onclick="toggleTask(${tasks.indexOf(task)})" ${task.done ? "checked" : ""}>
+        <span>${task.name}</span>
+        <div class="task-buttons">
+            <button class="edit-btn" onclick="editTask(${tasks.indexOf(task)})">Edit</button>
+            <button onclick="deleteTask(${tasks.indexOf(task)})">Delete</button>
+        </div>
+    `;
+
+    taskContainer.appendChild(taskElement);
+});
+            document.getElementById("itemsLeft").textContent = `${tasks.filter(task => !task.done).length} items left`;
+        }
+        document.getElementById("task").addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                addTask();
+            }
+        });
+        
+        function addTask() {
+            const taskInput = document.getElementById("task");
+            if (taskInput.value.trim()) {
+                tasks.push({ name: taskInput.value, done: false });
+                taskInput.value = "";
+                renderTasks();
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+            }
+        }
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            renderTasks();
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function editTask(index) {
+    const taskElement = document.querySelector(`[data-index="${index}"] span`);
+    if (!taskElement) return;
+
+    const oldValue = taskElement.textContent;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = oldValue;
+    input.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            tasks[index].name = input.value.trim() || oldValue;
+            renderTasks();
+        }
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    });
+
+    taskElement.replaceWith(input);
+    input.focus();
+}
+
+        function toggleTask(index) {
+            tasks[index].done = !tasks[index].done;
+            renderTasks();
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function filterTasks(type) {
+            document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+            document.querySelector(`[onclick="filterTasks('${type}')"]`).classList.add("active");
+            renderTasks();
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        function clearCompleted() {
+            tasks = tasks.filter(task => !task.done);
+            renderTasks();
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        document.getElementById("addTask").addEventListener("click", addTask);
+        renderTasks();
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    </script>
+</body>
+</html>
